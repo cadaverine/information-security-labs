@@ -1,58 +1,87 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
 
-// Table - таблица для шифровки
-type Table [][]string
+	"github.com/cadaverine/information-security-labs/lab-1/helpers"
+)
 
-// CreateTable - конструктор таблицы
-func CreateTable(alphabet []string) Table {
-	var table = make(Table, len(alphabet)+1)
+const (
+	alphabet = "a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z"
+)
 
-	for i := 0; i <= len(alphabet); i++ {
-		table[i] = make([]string, len(alphabet)+1)
+func supplementString(input string, key string) string {
+	keyLen := len(key)
 
-		for j := 0; j <= len(alphabet); j++ {
-			if i == 0 && j == 0 {
-				table[i][j] = ""
-			} else if i == 0 {
-				table[i][j] = alphabet[j-1]
-			} else if j == 0 {
-				table[i][j] = alphabet[i-1]
-			} else {
-				table[i][j] = alphabet[(i+j-1)%(len(alphabet))]
-			}
-		}
+	if keyLen == 0 {
+		return ""
 	}
 
-	return table
-}
+	result := []rune{}
+	keyArr := []rune(key)
 
-func (t Table) String() string {
-	format := "%-3s"
-	result := ""
-
-	for _, row := range t {
-		for _, item := range row {
-			result += fmt.Sprintf(format, item)
-		}
-
-		result += fmt.Sprintln()
+	for i := range input {
+		result = append(result, keyArr[i%keyLen])
 	}
 
-	return result
+	return string(result)
 }
 
-func encode(input string) string {
-	return ""
+func encode(input, key string, table *helpers.Table) string {
+	if len(key) == 0 {
+		return ""
+	}
+
+	length := len(input)
+	result := make([]string, length)
+
+	inpArr := strings.Split(input, "")
+	keyArr := strings.Split(supplementString(input, key), "")
+
+	for k := 0; k < length; k++ {
+		i := table.FindRowIndex(inpArr[k], 0)
+		j := table.FindRowIndex(keyArr[k], 0)
+
+		result[k] = (*table)[i][j]
+	}
+
+	return strings.Join(result, "")
 }
 
-func decode(input string) string {
-	return ""
+func decode(encoded, key string, table *helpers.Table) string {
+	if len(key) == 0 {
+		return ""
+	}
+
+	length := len(encoded)
+	result := make([]string, length)
+
+	inpArr := strings.Split(encoded, "")
+	keyArr := strings.Split(supplementString(encoded, key), "")
+
+	for k := 0; k < length; k++ {
+		i := table.FindColumnIndex(keyArr[k], 0)
+		j := table.FindRowIndex(inpArr[k], i)
+
+		result[k] = (*table)[0][j]
+	}
+
+	return strings.Join(result, "")
 }
 
 func main() {
-	table := CreateTable([]string{"a", "b", "c", "d"})
+	key := "abc"
+	input := "test input string"
 
-	fmt.Println(table)
+	table := helpers.CreateTable(strings.Split(alphabet, ", "))
+
+	fmt.Printf("Таблица для шифрования:\n\n%v\n", table)
+	fmt.Printf("Ключ: '%s'\nВходящая строка: '%s'\n", key, input)
+
+	encoded := encode(input, key, &table)
+	fmt.Printf("Зашифрованная строка: '%s'\n", encoded)
+
+	decoded := decode(encoded, key, &table)
+	fmt.Printf("Расшифрованная строка: '%s'\n", decoded)
 }
